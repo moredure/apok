@@ -1,0 +1,13 @@
+{
+  "name": "apok",
+  "version": "0.0.2",
+  "description": "Di Container Base class",
+  "main": "index.js",
+  "dependencies": {},
+  "devDependencies": {},
+  "scripts": {
+    "test": "echo \"Error: no test specified\" && exit 1"
+  },
+  "author": "Mikhail Faraponov",
+  "license": "ISC"
+}
