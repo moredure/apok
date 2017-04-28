@@ -111,7 +111,7 @@ class Apok {
    * Setter for prototype cannot be set!!!
    * @throws {TypeError} If setter called error thrown
    */
-  set prototype() {
+  set prototype(prototype) {
     throw new TypeError('Prototype cannot be replaced!!!');
   }
   /**
