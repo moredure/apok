@@ -3,7 +3,9 @@
   "version": "0.0.2",
   "description": "Di Container Base class",
   "main": "index.js",
-  "dependencies": {},
+  "dependencies": {
+    "globby": "^6.1.0"
+  },
   "devDependencies": {},
   "scripts": {
     "test": "echo \"Error: no test specified\" && exit 1"
