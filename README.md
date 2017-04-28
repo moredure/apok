@@ -1,5 +1,8 @@
 # apok
 Apok Di Container, which can be easyly testes (mocking POJSO);
+Container serches for methods with next signuture `/(lazyton|lazy|factory|singleton)(.*)/`
+If found this method will be edded to the context and if you `getBean('classname')` one of this method `(.*)` using for with
+as well as `Types['classname']()`;
 
 ### ./index.js
 ```js
