@@ -34,7 +34,7 @@ class User {
   }
 }
 
-module.exports = User2;
+module.exports = User;
 ```
 
 ### ./fixtures/service.js
