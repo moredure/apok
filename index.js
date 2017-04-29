@@ -13,7 +13,6 @@ class Apok {
     this._dirname = dirname;
     this._cache = new Map();
     this._patterns = [];
-    this._methodNamePattern = /(lazyton|lazy|factory|singleton)(.*)/;
     this._context = {};
   }
   /**
@@ -30,11 +29,25 @@ class Apok {
    * @return {Apok} builded container with context
    */
   build() {
-    globby
-      .sync(this._patterns.map(this._join.bind(this)))
-      .map(require.bind(require))
-      .reduce(this._inject.bind(this), this._context);
-    return this;
+    const required = this._require();
+    return required.reduce(this._inject, this);
+  }
+  /**
+   * [_require description]
+   * @return {[type]} [description]
+   */
+  _require() {
+    const files = this._load();
+    return files.map(require.bind(require));
+  }
+
+  /**
+   * [_load description]
+   * @return {[type]} [description]
+   */
+  _load() {
+    let filePatterns = this._patterns.map(this._join);
+    return globby.sync(filePatterns);
   }
   /**
    * Join full path with pattern
@@ -48,45 +61,39 @@ class Apok {
    * Injects constructors to context
    * @return {Object} context
    */
-  _inject(context, clazz) {
-    return Object.getOwnPropertyNames(clazz)
-      .filter((factoryName) => this._methodNamePattern.test(factoryName))
-      .map((factoryName) => this._methodNamePattern.exec(factoryName))
-      .reduce((context, [entire, scope, className]) => {
-        const self = this;
-        let instanciate = () => clazz[entire](context);
-        return Object.assign(context, {
-          [className]() {
-            if (scope === 'singleton') {
-              return self.singleton(className, instanciate);
-            } else if (scope === 'factory') {
-              return instanciate();
-            } else if (scope === 'lazy') {
-              return self.lazy(instanciate);
-            } else if (scope === 'lazyton') {
-              return self.singleton(className, () => self.lazy(instanciate));
-            } else {
-              throw new TypeError('Injection failed!');
-            }
-          },
-        });
-      }, context);
+  _inject(self, clazz) {
+    const properties = Object.getOwnPropertyNames(clazz);
+    return properties.reduce(this._reduce(clazz), self);
   }
   /**
-   * Lazy initializer
-   * @param  {Function} constructor constructor function
-   * @return {Proxy} proxy for initialization object
+   * [_reduce description]
+   * @param  {[type]} self     [description]
+   * @param  {[type]} property [description]
+   * @return {[type]}          [description]
    */
-  lazy(constructor) {
-    let instance = null;
-    return new Proxy({}, {
-      get(target, property) {
-        if (!instance) {
-          instance = constructor();
-        }
-        return instance[property];
+  _reduce(clazz) {
+    return (self, prop) => {
+      if (typeof clazz[prop] !== 'function') {
+        return self;
       }
-    });
+      const object = {
+        [prop](...args) {
+          let instance;
+          if (clazz[prop].isVisited) {
+            throw new TypeError(`Cycle in ${clazz.name}.${prop}()!`);
+          }
+          clazz[prop].isVisited = true;
+          if (clazz[prop].length === 0) {
+            instance = self._singleton(prop, clazz[prop].bind(self, ...args));
+          } else {
+            instance = clazz[prop].bind(self, ...args)();
+          }
+          delete clazz[prop].isVisited;
+          return instance;
+        },
+      }
+      return Object.assign(self, object);
+    };
   }
   /**
    * Caches result of callback with key value
@@ -94,32 +101,11 @@ class Apok {
    * @param  {Function} constructor code block for bean creation
    * @return {Object} returns new or cached value
    */
-  singleton(bean, constructor) {
+  _singleton(bean, constructor) {
     if (!this._cache.has(bean)) {
       this._cache.set(bean, constructor());
     }
     return this._cache.get(bean);
-  }
-  /**
-   * Prototype for mocking (e.g. sinon, mocha)
-   * @return {Object} context
-   */
-  get prototype() {
-    return this._context;
-  }
-  /**
-   * Setter for prototype cannot be set!!!
-   * @throws {TypeError} If setter called error thrown
-   */
-  set prototype(prototype) {
-    throw new TypeError('Prototype cannot be replaced!!!');
-  }
-  /**
-   * API method to create bean from context
-   * @return {Object} bean instance
-   */
-  getBean(bean) {
-    return this._context[bean]();
   }
   /**
    * Static factory
@@ -127,6 +113,20 @@ class Apok {
    * @return {Apok} new container
    */
   static of(dirname) {
-    return new Apok(dirname);
+    const container = new Apok(dirname);
+    container._load = container._load.bind(container);
+    container._join = container._join.bind(container);
+    container._inject = container._inject.bind(container);
+    container._reduce = container._reduce.bind(container);
+    container._singleton = container._singleton.bind(container);
+    return container;
   }
 }
+
+const container = Apok
+  .of(__dirname)
+  .match('./*.bean.js')
+  .build()
+
+container
+  .main()

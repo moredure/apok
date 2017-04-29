@@ -4,7 +4,7 @@
   "description": "Di Container Base class",
   "main": "index.js",
   "dependencies": {
-    "globby": "^6.1.0"
+    "globby": "^6.1.0",
   },
   "devDependencies": {},
   "scripts": {
