@@ -123,10 +123,4 @@ class Apok {
   }
 }
 
-const container = Apok
-  .of(__dirname)
-  .match('./*.bean.js')
-  .build()
-
-container
-  .main()
+module.exports = Apok;
