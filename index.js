@@ -11,9 +11,10 @@ class Apok {
    */
   constructor(dirname) {
     this._dirname = dirname;
-    this._cache = new Map();
+    this._cache = {};
     this._patterns = [];
     this._context = {};
+    this._snapshots = [];
   }
   /**
    * Match file name pattern (lookup path)
@@ -102,10 +103,24 @@ class Apok {
    * @return {Object} returns new or cached value
    */
   _singleton(bean, constructor) {
-    if (!this._cache.has(bean)) {
-      this._cache.set(bean, constructor());
+    if (!(bean in this._cache)) {
+      this._cache[bean] = constructor();
     }
-    return this._cache.get(bean);
+    return this._cache[bean];
+  }
+  /**
+   * [snapshot description]
+   * @return {[type]} [description]
+   */
+  snapshot() {
+    this._snapshots.push(Object.assign({}, this._cache));
+  }
+  /**
+   * [restore description]
+   * @return {[type]} [description]
+   */
+  restore() {
+    this._cache = this._snapshots.pop();
   }
   /**
    * Static factory
